@@ -1,8 +1,10 @@
 from pathlib import Path
-from PyQt5.QtGui import QIcon, QDoubleValidator
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QDoubleValidator, QMovie
 from PyQt5.QtWidgets import (
     QMainWindow, QTabWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QFrame, QSpacerItem,
-    QSizePolicy, QTextEdit, QCheckBox, QGroupBox
+    QSizePolicy, QTextEdit, QCheckBox, QGroupBox, QScrollArea
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -77,17 +79,27 @@ class MainWindow(QMainWindow):
 
         left_layout.addWidget(checkbox_group)
 
+        matrix_input_widget = QWidget()
+        matrix_input_layout = QVBoxLayout(matrix_input_widget)
+        matrix_input_layout.setAlignment(Qt.AlignTop)
+
         self.matrix_size_fields = QVBoxLayout()
         self.add_matrix_size_input()
 
+        matrix_input_layout.addLayout(self.matrix_size_fields)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        scroll_area.setWidget(matrix_input_widget)
+
+        left_layout.addWidget(scroll_area)
+
         add_matrix_button = QPushButton("Добавить пару матриц")
         add_matrix_button.clicked.connect(self.add_matrix_size_input)
+        left_layout.addWidget(add_matrix_button)
 
         calculate_button = QPushButton("Рассчитать")
-
-        left_layout.addLayout(self.matrix_size_fields)
-        left_layout.addWidget(add_matrix_button)
-        left_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         left_layout.addWidget(calculate_button)
 
         right_widget = QWidget()
@@ -131,7 +143,7 @@ class MainWindow(QMainWindow):
         cols_input.setPlaceholderText("Столбцов")
 
         remove_button = QPushButton("⮾")
-        remove_button.setStyleSheet("background-color: red; color: white; font-size: 20px; padding: 0 5px 0 5px;")
+        remove_button.setStyleSheet("background-color: #DC4242; color: white; font-size: 20px; padding: 0 5px 0 5px;")
         remove_button.clicked.connect(lambda: self.remove_matrix_size_input(matrix_input_layout))
 
         matrix_input_layout.addWidget(QLabel("Матрица:"))
@@ -151,6 +163,8 @@ class MainWindow(QMainWindow):
         scipy_times = []
         sumpy_times = []
         tensorflow_times = []
+
+        self.graph_canvas.figure.clear()
 
         results_text = ""
 
@@ -228,7 +242,6 @@ class MainWindow(QMainWindow):
                    strassen_times, custom_strassen_times,
                    scipy_times, sumpy_times,
                    tensorflow_times, numpy_times):
-        self.graph_canvas.figure.clear()
         ax = self.graph_canvas.figure.add_subplot(111)
 
         if sizes and classic_times:

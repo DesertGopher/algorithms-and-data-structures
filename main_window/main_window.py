@@ -2,14 +2,17 @@ from pathlib import Path
 from PyQt5.QtGui import QIcon, QDoubleValidator
 from PyQt5.QtWidgets import (
     QMainWindow, QTabWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QFrame, QSpacerItem,
-    QSizePolicy, QTextEdit
+    QSizePolicy, QTextEdit, QCheckBox, QGroupBox
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
 import time
 
-from .matrix_calculations import classic_multiplication, strassen_multiplication
+from .matrix_calculations import (classic_multiplication,
+                                  strassen_multiplication, custom_strassen_multiplication, \
+                                  scipy_multiplication, sympy_multiplication,
+                                  tensorflow_multiplication, numpy_multiplication)
 
 
 class MainWindow(QMainWindow):
@@ -49,6 +52,30 @@ class MainWindow(QMainWindow):
 
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
+
+        label = QLabel("Ввод матриц для умножения")
+        left_layout.addWidget(label)
+
+        checkbox_group = QGroupBox("Выберите алгоритмы")
+        checkbox_layout = QVBoxLayout(checkbox_group)
+
+        self.classic_checkbox = QCheckBox("Классическое умножение")
+        self.strassen_checkbox = QCheckBox("Умножение Штрассена")
+        self.custom_strassen_checkbox = QCheckBox("Свой Штрассен")
+        self.numpy_strassen_checkbox = QCheckBox("Умножение Numpy")
+        self.scipy_checkbox = QCheckBox("Умножение Scipy")
+        self.sumpy_checkbox = QCheckBox("Умножение Sumpy")
+        self.tensorflow_checkbox = QCheckBox("Умножение TensorFlow")
+
+        checkbox_layout.addWidget(self.classic_checkbox)
+        checkbox_layout.addWidget(self.strassen_checkbox)
+        checkbox_layout.addWidget(self.custom_strassen_checkbox)
+        checkbox_layout.addWidget(self.numpy_strassen_checkbox)
+        checkbox_layout.addWidget(self.scipy_checkbox)
+        checkbox_layout.addWidget(self.sumpy_checkbox)
+        checkbox_layout.addWidget(self.tensorflow_checkbox)
+
+        left_layout.addWidget(checkbox_group)
 
         self.matrix_size_fields = QVBoxLayout()
         self.add_matrix_size_input()
@@ -119,6 +146,11 @@ class MainWindow(QMainWindow):
         sizes = []
         classic_times = []
         strassen_times = []
+        numpy_times = []
+        custom_strassen_times = []
+        scipy_times = []
+        sumpy_times = []
+        tensorflow_times = []
 
         results_text = ""
 
@@ -131,36 +163,88 @@ class MainWindow(QMainWindow):
 
                 if rows == cols and rows > 0:
                     matrix = np.random.randint(0, 10, (rows, cols))
+                    results_text += f"Матрица {rows}x{cols}:\n"
 
-                    start_time = time.time()
-                    classic_result = classic_multiplication(matrix, matrix)
-                    classic_time = time.time() - start_time
-                    classic_times.append(classic_time)
+                    if self.classic_checkbox.isChecked():
+                        start_time = time.time()
+                        classic_result = classic_multiplication(matrix, matrix)
+                        classic_time = time.time() - start_time
+                        classic_times.append(classic_time)
+                        results_text += f"Классическое умножение: {classic_time:.4f} сек\n"
 
-                    start_time = time.time()
-                    strassen_result = strassen_multiplication(matrix, matrix)
-                    strassen_time = time.time() - start_time
-                    strassen_times.append(strassen_time)
+                    if self.strassen_checkbox.isChecked():
+                        start_time = time.time()
+                        strassen_result = strassen_multiplication(list(matrix), list(matrix))
+                        strassen_time = time.time() - start_time
+                        strassen_times.append(strassen_time)
+                        results_text += f"Умножение Штрассена: {strassen_time:.4f} сек\n"
+
+                    if self.custom_strassen_checkbox.isChecked():
+                        start_time = time.time()
+                        custom_strassen_result = custom_strassen_multiplication(matrix, matrix)
+                        custom_strassen_time = time.time() - start_time
+                        custom_strassen_times.append(custom_strassen_time)
+                        results_text += f"Написанный Штрассен: {custom_strassen_time:.4f} сек\n"
+
+                    if self.numpy_strassen_checkbox.isChecked():
+                        start_time = time.time()
+                        custom_strassen_result = numpy_multiplication(matrix, matrix)
+                        numpy_time = time.time() - start_time
+                        numpy_times.append(numpy_time)
+                        results_text += f"Умножение Numpy: {numpy_time:.4f} сек\n"
+
+                    if self.scipy_checkbox.isChecked():
+                        start_time = time.time()
+                        scipy_result = scipy_multiplication(matrix, matrix)
+                        scipy_time = time.time() - start_time
+                        scipy_times.append(scipy_time)
+                        results_text += f"Умножение Scipy: {scipy_time:.4f} сек\n"
+
+                    if self.sumpy_checkbox.isChecked():
+                        start_time = time.time()
+                        sumpy_result = sympy_multiplication(matrix, matrix)
+                        sumpy_time = time.time() - start_time
+                        sumpy_times.append(sumpy_time)
+                        results_text += f"Умножение Sumpy: {sumpy_time:.4f} сек\n"
+
+                    if self.tensorflow_checkbox.isChecked():
+                        start_time = time.time()
+                        tensorflow_result = tensorflow_multiplication(matrix, matrix)
+                        tensorflow_time = time.time() - start_time
+                        tensorflow_times.append(tensorflow_time)
+                        results_text += f"Умножение TensorFlow: {tensorflow_time:.4f} сек\n"
 
                     sizes.append(rows)
+                    results_text += "\n"
 
-                    results_text += (
-                        f"Матрица {rows}x{cols}:\n"
-                        f"Классическое умножение: {classic_time:.4f} сек\n"
-                        f"Умножение Штрассена: {strassen_time:.4f} сек\n\n"
-                    )
                 else:
                     results_text += f"Пропуск неквадратной матрицы {rows}x{cols}\n\n"
 
-        self.plot_graph(sizes, classic_times, strassen_times)
+        self.plot_graph(sizes, classic_times, strassen_times, custom_strassen_times,
+                        scipy_times, sumpy_times, tensorflow_times, numpy_times)
         self.explanation_text_edit.setText(results_text)
 
-    def plot_graph(self, sizes, classic_times, strassen_times):
+    def plot_graph(self, sizes, classic_times,
+                   strassen_times, custom_strassen_times,
+                   scipy_times, sumpy_times,
+                   tensorflow_times, numpy_times):
         self.graph_canvas.figure.clear()
         ax = self.graph_canvas.figure.add_subplot(111)
 
-        ax.plot(sizes, classic_times, label="Классическое умножение", marker='o')
-        ax.plot(sizes, strassen_times, label="Умножение Штрассена", marker='o')
+        if sizes and classic_times:
+            ax.plot(sizes, classic_times, label="Классическое умножение", marker='o')
+        if sizes and strassen_times:
+            ax.plot(sizes, strassen_times, label="Умножение Штрассена", marker='o')
+        if sizes and custom_strassen_times:
+            ax.plot(sizes, custom_strassen_times, label="Свой Штрассен", marker='o')
+        if sizes and numpy_times:
+            ax.plot(sizes, numpy_times, label="Умножение Numpy", marker='o')
+        if sizes and scipy_times:
+            ax.plot(sizes, scipy_times, label="Умножение Scipy", marker='o')
+        if sizes and sumpy_times:
+            ax.plot(sizes, sumpy_times, label="Умножение Sumpy", marker='o')
+        if sizes and tensorflow_times:
+            ax.plot(sizes, tensorflow_times, label="Умножение TensorFlow", marker='o')
 
         ax.set_xlabel("Размер матрицы")
         ax.set_ylabel("Время выполнения (сек)")

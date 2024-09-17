@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QDoubleValidator, QMovie
 from PyQt5.QtWidgets import (
     QMainWindow, QTabWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QFrame, QSpacerItem,
-    QSizePolicy, QTextEdit, QCheckBox, QGroupBox, QScrollArea
+    QSizePolicy, QTextEdit, QCheckBox, QGroupBox, QScrollArea, QFormLayout
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -15,6 +15,7 @@ from .matrix_calculations import (classic_multiplication,
                                   strassen_multiplication, custom_strassen_multiplication, \
                                   scipy_multiplication, sympy_multiplication,
                                   tensorflow_multiplication, numpy_multiplication)
+from .queue_stack import QueueArray, QueueLinkedList, StackLinkedList, StackArray
 
 
 class MainWindow(QMainWindow):
@@ -41,11 +42,143 @@ class MainWindow(QMainWindow):
 
     def init_tabs(self):
         tab1 = self.create_matrix_input_tab()
+        tab2 = self.create_data_structures_tab()
         self.tabs.addTab(tab1, "1. Исследование производительности алгоритмов")
-        self.tabs.addTab(QWidget(), "Лаб 2")
+        self.tabs.addTab(tab2, "2. Исследование программной реализации структур данных")
         self.tabs.addTab(QWidget(), "Лаб 3")
         self.tabs.addTab(QWidget(), "Лаб 4")
         self.tabs.setTabsClosable(False)
+
+    def create_data_structures_tab(self):
+        # Создаем виджет для второго таба
+        tab2 = QWidget()
+
+        # Основной горизонтальный лейаут
+        layout = QHBoxLayout()
+
+        # Левая часть (на основе массивов)
+        array_layout = QVBoxLayout()
+        array_form = QFormLayout()
+        self.array_input = QLineEdit()
+        array_form.addRow(QLabel("Количество элементов (массив):"), self.array_input)
+        array_layout.addLayout(array_form)
+
+        # Добавляем графическое представление для массива
+        self.array_graphic = QLabel()
+        array_layout.addWidget(self.array_graphic)
+
+        # Правая часть (на основе связных списков)
+        linked_list_layout = QVBoxLayout()
+        linked_list_form = QFormLayout()
+        self.linked_list_input = QLineEdit()
+        linked_list_form.addRow(QLabel("Количество элементов (связный список):"), self.linked_list_input)
+        linked_list_layout.addLayout(linked_list_form)
+
+        # Добавляем графическое представление для связного списка
+        self.linked_list_graphic = QLabel()
+        linked_list_layout.addWidget(self.linked_list_graphic)
+
+        # Добавляем лейауты в основной лейаут
+        layout.addLayout(array_layout)
+        layout.addLayout(linked_list_layout)
+
+        # Кнопка для тестирования
+        self.test_button = QPushButton("Протестировать")
+        self.test_button.clicked.connect(self.run_test)
+
+        # Поле для вывода результата
+        self.result_output = QTextEdit()
+        self.result_output.setReadOnly(True)
+
+        # Добавляем кнопку и результат в лейаут
+        bottom_layout = QVBoxLayout()
+        bottom_layout.addWidget(self.test_button)
+        bottom_layout.addWidget(self.result_output)
+
+        # Добавляем основной лейаут и нижний (кнопку и вывод) в общий вертикальный лейаут
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(layout)
+        main_layout.addLayout(bottom_layout)
+
+        tab2.setLayout(main_layout)
+        return tab2
+
+    def format_elements(self, elements):
+        n = len(elements)
+        if n <= 6:
+            return ' -> '.join(map(str, elements))
+        else:
+            # Если больше 6 элементов, показываем первые 2 и последние 2 с указанием размера
+            return f"{elements[0]} -> {elements[1]} -> ... -> {elements[-2]} -> {elements[-1]} (Всего: {n} элементов)"
+
+    def run_test(self):
+        # Получаем введенные данные
+        array_size = int(self.array_input.text()) if self.array_input.text().isdigit() else 0
+        linked_list_size = int(self.linked_list_input.text()) if self.linked_list_input.text().isdigit() else 0
+
+        # Тестирование стека и очереди на основе массива
+        stack_array = StackArray()
+        queue_array = QueueArray()
+        array_result = self.test_stack_and_queue(stack_array, queue_array, array_size)
+
+        # Обновляем графическое представление элементов для массива
+        stack_array_elements = [i for i in range(array_size)]  # Пример генерации элементов
+        queue_array_elements = [i for i in range(array_size)]  # Пример генерации элементов
+        array_graphic_text = (f"Стек (массив): {self.format_elements(stack_array_elements)}\n"
+                              f"Очередь (массив): {self.format_elements(queue_array_elements)}")
+        self.array_graphic.setText(array_graphic_text)
+
+        # Тестирование стека и очереди на основе связного списка
+        stack_linked = StackLinkedList()
+        queue_linked = QueueLinkedList()
+        linked_result = self.test_stack_and_queue(stack_linked, queue_linked, linked_list_size)
+
+        # Обновляем графическое представление элементов для связного списка
+        stack_linked_elements = [i for i in range(linked_list_size)]  # Пример генерации элементов
+        queue_linked_elements = [i for i in range(linked_list_size)]  # Пример генерации элементов
+        linked_list_graphic_text = (f"Стек (связный список): {self.format_elements(stack_linked_elements)}\n"
+                                    f"Очередь (связный список): {self.format_elements(queue_linked_elements)}")
+        self.linked_list_graphic.setText(linked_list_graphic_text)
+
+        # Формирование и вывод результата
+        result = f"Тестирование производительности для массива:\n{array_result}\n\n"
+        result += f"Тестирование производительности для связного списка:\n{linked_result}\n"
+
+        # Выводим результат в текстовое поле
+        self.result_output.setText(result)
+
+    def test_stack_and_queue(self, stack, queue, n):
+        result = ""
+
+        # Тестирование операций со стеком (push, pop)
+        start_time = time.time()
+        for i in range(n):
+            stack.push(i)
+        push_time = time.time() - start_time
+
+        start_time = time.time()
+        for i in range(n):
+            stack.pop()
+        pop_time = time.time() - start_time
+
+        result += f"  Стек (push): {push_time:.6f} с\n"
+        result += f"  Стек (pop): {pop_time:.6f} с\n"
+
+        # Тестирование операций с очередью (enqueue, dequeue)
+        start_time = time.time()
+        for i in range(n):
+            queue.enqueue(i)
+        enqueue_time = time.time() - start_time
+
+        start_time = time.time()
+        for i in range(n):
+            queue.dequeue()
+        dequeue_time = time.time() - start_time
+
+        result += f"  Очередь (enqueue): {enqueue_time:.6f} с\n"
+        result += f"  Очередь (dequeue): {dequeue_time:.6f} с\n"
+
+        return result
 
     def create_matrix_input_tab(self):
         main_tab_layout = QHBoxLayout()
@@ -181,49 +314,49 @@ class MainWindow(QMainWindow):
 
                     if self.classic_checkbox.isChecked():
                         start_time = time.time()
-                        classic_result = classic_multiplication(matrix, matrix)
+                        classic_multiplication(matrix, matrix)
                         classic_time = time.time() - start_time
                         classic_times.append(classic_time)
                         results_text += f"Классическое умножение: {classic_time:.4f} сек\n"
 
                     if self.strassen_checkbox.isChecked():
                         start_time = time.time()
-                        strassen_result = strassen_multiplication(list(matrix), list(matrix))
+                        strassen_multiplication(list(matrix), list(matrix))
                         strassen_time = time.time() - start_time
                         strassen_times.append(strassen_time)
                         results_text += f"Умножение Штрассена: {strassen_time:.4f} сек\n"
 
                     if self.custom_strassen_checkbox.isChecked():
                         start_time = time.time()
-                        custom_strassen_result = custom_strassen_multiplication(matrix, matrix)
+                        custom_strassen_multiplication(matrix, matrix)
                         custom_strassen_time = time.time() - start_time
                         custom_strassen_times.append(custom_strassen_time)
                         results_text += f"Написанный Штрассен: {custom_strassen_time:.4f} сек\n"
 
                     if self.numpy_strassen_checkbox.isChecked():
                         start_time = time.time()
-                        custom_strassen_result = numpy_multiplication(matrix, matrix)
+                        numpy_multiplication(matrix, matrix)
                         numpy_time = time.time() - start_time
                         numpy_times.append(numpy_time)
                         results_text += f"Умножение Numpy: {numpy_time:.4f} сек\n"
 
                     if self.scipy_checkbox.isChecked():
                         start_time = time.time()
-                        scipy_result = scipy_multiplication(matrix, matrix)
+                        scipy_multiplication(matrix, matrix)
                         scipy_time = time.time() - start_time
                         scipy_times.append(scipy_time)
                         results_text += f"Умножение Scipy: {scipy_time:.4f} сек\n"
 
                     if self.sumpy_checkbox.isChecked():
                         start_time = time.time()
-                        sumpy_result = sympy_multiplication(matrix, matrix)
+                        sympy_multiplication(matrix, matrix)
                         sumpy_time = time.time() - start_time
                         sumpy_times.append(sumpy_time)
                         results_text += f"Умножение Sumpy: {sumpy_time:.4f} сек\n"
 
                     if self.tensorflow_checkbox.isChecked():
                         start_time = time.time()
-                        tensorflow_result = tensorflow_multiplication(matrix, matrix)
+                        tensorflow_multiplication(matrix, matrix)
                         tensorflow_time = time.time() - start_time
                         tensorflow_times.append(tensorflow_time)
                         results_text += f"Умножение TensorFlow: {tensorflow_time:.4f} сек\n"

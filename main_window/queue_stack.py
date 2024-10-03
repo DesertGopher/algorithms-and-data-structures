@@ -18,22 +18,30 @@ class StackArray:
 
 
 class QueueArray:
-    def __init__(self):
-        self.queue = []
+    def __init__(self, size_limit):
+        self.size_limit = size_limit
+        self.queue = [None] * size_limit
+        self.enqueue_index = 0
+        self.dequeue_index = 0
+        self.current_size = 0
 
     def enqueue(self, item):
-        self.queue.append(item)
+        if self.current_size < self.size_limit:
+            self.queue[self.enqueue_index] = item
+            self.enqueue_index = (self.enqueue_index + 1) % self.size_limit
+            self.current_size += 1
 
     def dequeue(self):
-        if not self.is_empty():
-            return self.queue.pop(0)
-        return None
+        if self.current_size > 0:
+            self.queue[self.dequeue_index] = None
+            self.dequeue_index = (self.dequeue_index + 1) % self.size_limit
+            self.current_size -= 1
 
     def is_empty(self):
-        return len(self.queue) == 0
+        return self.current_size == 0
 
     def size(self):
-        return len(self.queue)
+        return self.current_size
 
 
 class Node:

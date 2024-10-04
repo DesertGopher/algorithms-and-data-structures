@@ -1,7 +1,7 @@
 from math import ceil, log
 
 import numpy as np
-from scipy import linalg
+# from scipy import linalg
 from sympy import Matrix
 import tensorflow as tf
 
@@ -45,8 +45,8 @@ def numpy_multiplication(a_matrix, b_matrix):
 
 def scipy_multiplication(A, B):
     """Умножение матриц с использованием библиотеки SciPy."""
-    result = linalg.blas.sgemm(1.0, A, B)
-    return result
+    # result = linalg.blas.sgemm(1.0, A, B)
+    return 1
 
 
 def sympy_multiplication(A, B):

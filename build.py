@@ -20,7 +20,7 @@ def build_exe():
 
         '--hidden-import', 'matplotlib',
         '--hidden-import', 'PyQt5',
-        '--hidden-import', 'scipy',
+        # '--hidden-import', 'scipy',
         '--hidden-import', 'sympy',
         '--hidden-import', 'numpy',
         '--hidden-import', 'tensorflow',

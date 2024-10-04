@@ -1,11 +1,13 @@
+import random
 import time
 from pathlib import Path
 
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDoubleValidator, QIcon
+from PyQt5.QtGui import QDoubleValidator, QIcon, QIntValidator
 from PyQt5.QtWidgets import (
     QCheckBox,
     QFormLayout,
@@ -23,6 +25,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from .large_miltiplication import karatsuba, classic_large_multiplication
 from .matrix_calculations import (
     classic_multiplication,
     custom_strassen_multiplication,
@@ -38,26 +41,12 @@ from .queue_stack import QueueArray, QueueLinkedList, StackArray, StackLinkedLis
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.explanation_text_edit = None
-        self.matrix_size_fields = None
-        self.tensorflow_checkbox = None
-        self.graph_canvas = None
-        self.sumpy_checkbox = None
-        self.scipy_checkbox = None
-        self.custom_strassen_checkbox = None
-        self.strassen_checkbox = None
-        self.numpy_strassen_checkbox = None
-        self.classic_checkbox = None
-        self.result_output = None
-        self.test_button = None
-        self.linked_list_graphic = None
-        self.linked_list_input = None
-        self.array_graphic = None
-        self.array_input = None
         self.main_widget = QWidget()
         self.main_layout = QVBoxLayout(self.main_widget)
         self.tabs = QTabWidget()
+        self.current_lm_length = 10
         self.double_validator = QDoubleValidator()
+        self.int_validator = QIntValidator()
         self.initUI()
         self.show()
 
@@ -76,14 +65,109 @@ class MainWindow(QMainWindow):
     def init_tabs(self):
         tab1 = self.create_matrix_input_tab()
         tab2 = self.create_data_structures_tab()
+        tab3 = self.create_large_multiplication_tab()
         self.tabs.addTab(tab1, "1. Исследование производительности алгоритмов")
         self.tabs.addTab(tab2, "2. Исследование программной реализации структур данных")
-        self.tabs.addTab(QWidget(), "Лаб 3")
-        self.tabs.addTab(QWidget(), "Лаб 4")
+        self.tabs.addTab(tab3, "3. Алгоритмы длинной арифметики")
+
         self.tabs.setTabsClosable(False)
 
-    def create_data_structures_tab(self):
+    def create_large_multiplication_tab(self):
+        layout = QVBoxLayout()
 
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFixedHeight(150)
+        self.scroll_area_content = QWidget()
+        self.scroll_area_layout = QVBoxLayout(self.scroll_area_content)
+
+        for _ in range(3):
+            self.add_length_input()
+
+        self.scroll_area.setWidget(self.scroll_area_content)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.scroll_area)
+
+        button_container_layout = QVBoxLayout()
+
+        add_button = QPushButton("Добавить поле для длины числа")
+        add_button.clicked.connect(self.add_length_input)
+        button_container_layout.addWidget(add_button)
+
+        calculate_button = QPushButton("Запустить расчеты")
+        calculate_button.clicked.connect(self.run_calculations)
+        button_container_layout.addWidget(calculate_button)
+
+        button_layout.addLayout(button_container_layout)
+        layout.addLayout(button_layout)
+
+        self.graph_widget = QWidget()
+        self.graph_layout = QVBoxLayout()
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.graph_layout.addWidget(self.canvas)
+        self.graph_widget.setLayout(self.graph_layout)
+
+        layout.addWidget(self.graph_widget)
+
+        tab = QWidget()
+        tab.setLayout(layout)
+        return tab
+
+    def add_length_input(self):
+        length_input = QLineEdit()
+        length_input.setValidator(self.int_validator)
+        length_input.setPlaceholderText("Введите длину числа")
+        length_input.setText(str(self.current_lm_length))
+        self.scroll_area_layout.addWidget(length_input)
+        self.current_lm_length += 40
+
+    def run_calculations(self):
+        lengths = []
+
+        for i in range(self.scroll_area_layout.count()):
+            length_input = self.scroll_area_layout.itemAt(i).widget()
+            if isinstance(length_input, QLineEdit):
+                text = length_input.text().strip()
+                if text.isdigit() and int(text) > 0:
+                    lengths.append(int(text))
+
+        times_classic = []
+        times_karatsuba = []
+
+        for length in lengths:
+            num1 = self.generate_large_number(length)
+            num2 = self.generate_large_number(length)
+
+            start_time = time.time()
+            classic_large_multiplication(num1, num2)
+            classic_time = time.time() - start_time
+            times_classic.append(classic_time)
+
+            start_time = time.time()
+            karatsuba(num1, num2)
+            karatsuba_time = time.time() - start_time
+            times_karatsuba.append(karatsuba_time)
+
+        self.plot_lm_graph(lengths, times_classic, times_karatsuba)
+
+    @staticmethod
+    def generate_large_number(length):
+        return random.randint(10 ** (length - 1), 10 ** length - 1)
+
+    def plot_lm_graph(self, lengths, times_classic, times_karatsuba):
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
+        ax.plot(lengths, times_classic, label='Классический алгоритм', marker='o')
+        ax.plot(lengths, times_karatsuba, label='Алгоритм Карацубы', marker='o')
+        ax.set_xlabel('Длина числа')
+        ax.set_ylabel('Время (сек.)')
+        ax.set_title('Сравнение времени выполнения алгоритмов')
+        ax.legend()
+        self.canvas.draw()
+
+    def create_data_structures_tab(self):
         tab2 = QWidget()
 
         layout = QHBoxLayout()
@@ -95,8 +179,8 @@ class MainWindow(QMainWindow):
         array_form.addRow(QLabel("Количество элементов (массив):"), self.array_input)
         array_layout.addLayout(array_form)
 
-        self.array_graphic = QLabel()
-        array_layout.addWidget(self.array_graphic)
+        self.array_display = QLabel()
+        array_layout.addWidget(self.array_display)
 
         linked_list_layout = QVBoxLayout()
         linked_list_form = QFormLayout()
@@ -107,8 +191,8 @@ class MainWindow(QMainWindow):
         )
         linked_list_layout.addLayout(linked_list_form)
 
-        self.linked_list_graphic = QLabel()
-        linked_list_layout.addWidget(self.linked_list_graphic)
+        self.linked_list_display = QLabel()
+        linked_list_layout.addWidget(self.linked_list_display)
 
         layout.addLayout(array_layout)
         layout.addLayout(linked_list_layout)
@@ -116,13 +200,13 @@ class MainWindow(QMainWindow):
         self.test_button = QPushButton("Протестировать")
         self.test_button.clicked.connect(self.run_test)
 
-        self.result_output = QTextEdit()
-        self.result_output.setReadOnly(True)
-        self.result_output.setStyleSheet("font-size: 22px;")
+        self.output_area = QTextEdit()
+        self.output_area.setReadOnly(True)
+        self.output_area.setStyleSheet("font-size: 22px;")
 
         bottom_layout = QVBoxLayout()
         bottom_layout.addWidget(self.test_button)
-        bottom_layout.addWidget(self.result_output)
+        bottom_layout.addWidget(self.output_area)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(layout)
@@ -161,7 +245,7 @@ class MainWindow(QMainWindow):
             f"Стек (массив): {self.format_elements(stack_array_elements)}\n"
             f"Очередь (массив): {self.format_elements(queue_array_elements)}"
         )
-        self.array_graphic.setText(array_graphic_text)
+        self.array_display.setText(array_graphic_text)
 
         stack_linked = StackLinkedList()
         queue_linked = QueueLinkedList()
@@ -175,14 +259,14 @@ class MainWindow(QMainWindow):
             f"Стек (связный список): {self.format_elements(stack_linked_elements)}\n"
             f"Очередь (связный список): {self.format_elements(queue_linked_elements)}"
         )
-        self.linked_list_graphic.setText(linked_list_graphic_text)
+        self.linked_list_display.setText(linked_list_graphic_text)
 
         result = f"Тестирование производительности для массива:\n{array_result}\n\n"
         result += (
             f"Тестирование производительности для связного списка:\n{linked_result}\n"
         )
 
-        self.result_output.setText(result)
+        self.output_area.setText(result)
 
     @staticmethod
     def test_stack_and_queue(stack, queue, n):
@@ -428,15 +512,15 @@ class MainWindow(QMainWindow):
         self.explanation_text_edit.setText(results_text)
 
     def plot_graph(
-        self,
-        sizes,
-        classic_times,
-        strassen_times,
-        custom_strassen_times,
-        scipy_times,
-        sumpy_times,
-        tensorflow_times,
-        numpy_times,
+            self,
+            sizes,
+            classic_times,
+            strassen_times,
+            custom_strassen_times,
+            scipy_times,
+            sumpy_times,
+            tensorflow_times,
+            numpy_times,
     ):
         ax = self.graph_canvas.figure.add_subplot(111)
 

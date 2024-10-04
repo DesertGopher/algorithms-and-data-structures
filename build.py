@@ -1,8 +1,6 @@
 import PyInstaller.__main__
 import shutil
 import os
-from cryptography.fernet import Fernet
-
 
 def build_exe():
     main_file = "main.py"

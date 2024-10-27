@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "algorithms-and-data-structures"
+version = "0.1.0"
+description = ""
+authors = ["Babin Igor <quasar360@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyqt5 = "^5.15.11"
+scipy = "^1.14.1"
+tensorflow = "^2.18.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

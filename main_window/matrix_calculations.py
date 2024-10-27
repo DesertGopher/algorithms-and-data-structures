@@ -1,40 +1,25 @@
 from math import ceil, log
 
 import numpy as np
-# from scipy import linalg
+from scipy import linalg
 from sympy import Matrix
 import tensorflow as tf
 
 
-def classic_multiplication(A, B):
-    """
-    Умножение двух матриц A и B.
+def classic_multiplication(a, b):
+    rows_a = len(a)
+    cols_a = len(a[0])
+    rows_b = len(b)
+    cols_b = len(b[0])
 
-    Параметры:
-    A (list of list of int/float): Первая матрица
-    B (list of list of int/float): Вторая матрица
-
-    Возвращает:
-    list of list of int/float: Результат умножения матриц
-    """
-    # Определяем размеры матриц
-    rows_A = len(A)
-    cols_A = len(A[0])
-    rows_B = len(B)
-    cols_B = len(B[0])
-
-    # Проверка на согласованность размеров
-    if cols_A != rows_B:
+    if cols_a != rows_b:
         raise ValueError("Число столбцов первой матрицы должно быть равно числу строк второй матрицы.")
 
-    # Инициализация результата с нулями
-    result = [[0] * cols_B for _ in range(rows_A)]
-
-    # Умножение матриц
-    for i in range(rows_A):
-        for j in range(cols_B):
-            for k in range(cols_A):
-                result[i][j] += A[i][k] * B[k][j]
+    result = [[0] * cols_b for _ in range(rows_a)]
+    for i in range(rows_a):
+        for j in range(cols_b):
+            for k in range(cols_a):
+                result[i][j] += a[i][k] * b[k][j]
 
     return result
 
@@ -45,7 +30,7 @@ def numpy_multiplication(a_matrix, b_matrix):
 
 def scipy_multiplication(A, B):
     """Умножение матриц с использованием библиотеки SciPy."""
-    # result = linalg.blas.sgemm(1.0, A, B)
+    result = linalg.blas.sgemm(1.0, A, B)
     return 1
 
 
@@ -91,21 +76,17 @@ def pad_matrix(a_matrix):
 
 
 def custom_strassen_multiplication(a_matrix, b_matrix):
-    # Запоминаем исходные размеры матриц
     original_size = a_matrix.shape
 
-    # Если размер матриц нечётный, дополняем их до чётного размера
     if len(a_matrix) % 2 != 0 or len(a_matrix[0]) % 2 != 0:
         a_matrix = pad_matrix(a_matrix)
         b_matrix = pad_matrix(b_matrix)
 
     n = len(b_matrix)
 
-    # Базовый случай для матриц 1x1
     if n == 1:
         return a_matrix * b_matrix
 
-    # Если размеры матрицы 2x2 или меньше, переходим к классическому умножению
     if n <= 2:
         return numpy_multiplication(a_matrix, b_matrix)
 
@@ -126,10 +107,8 @@ def custom_strassen_multiplication(a_matrix, b_matrix):
     C21 = M2 + M4
     C22 = M1 - M2 + M3 + M6
 
-    # Собираем результат
     C = np.vstack((np.hstack((C11, C12)), np.hstack((C21, C22))))
 
-    # Обрезаем итоговую матрицу до исходного размера
     return C[:original_size[0], :original_size[1]]
 
 

@@ -36,6 +36,7 @@ from .matrix_calculations import (
     tensorflow_multiplication,
 )
 from .queue_stack import QueueArray, QueueLinkedList, StackArray, StackLinkedList
+from .tree_widget import TreesTabWidget
 
 
 class MainWindow(QMainWindow):
@@ -66,10 +67,11 @@ class MainWindow(QMainWindow):
         tab1 = self.create_matrix_input_tab()
         tab2 = self.create_data_structures_tab()
         tab3 = self.create_large_multiplication_tab()
+        tab4 = TreesTabWidget()
         self.tabs.addTab(tab1, "1. Исследование производительности алгоритмов")
         self.tabs.addTab(tab2, "2. Исследование программной реализации структур данных")
         self.tabs.addTab(tab3, "3. Алгоритмы длинной арифметики")
-
+        self.tabs.addTab(tab4, "4. Реализация и исследование деревьев")
         self.tabs.setTabsClosable(False)
 
     def create_large_multiplication_tab(self):

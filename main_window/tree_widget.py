@@ -119,7 +119,7 @@ class TreesTabWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.avl_tree = AVLTree()
-        for _ in range(40):
+        for _ in range(20):
             self.avl_tree.insert_key(random.randint(1, 100))
 
         self.init_ui()
